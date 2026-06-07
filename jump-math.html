@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🐰 小兔子跳格子 - 20以内加减法</title>
+<style>
+/* ===== 全局 ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8E7;
+  --text: #4E342E;
+  --green-light: #E8F5E9;
+  --orange: #FFB74D;
+  --pink-light: #FFCDD2;
+  --green: #66BB6A;
+  --blue: #42A5F5;
+  --gold: #FFD700;
+  --card-add: #FFE0B2;
+  --card-sub: #BBDEFB;
+  --btn-add: #FF9800;
+  --btn-sub: #2196F3;
+}
+
+body {
+  font-family: -apple-system, "PingFang SC", "KaiTi", "Comic Sans MS", cursive, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.container {
+  width: 100%;
+  max-width: 800px;
+  padding: 16px;
+  position: relative;
+}
+
+/* ===== 屏幕切换 ===== */
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+.screen.active { display: flex; }
+
+/* ===== 开始页 ===== */
+.title {
+  font-size: clamp(36px, 8vw, 56px);
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.2;
+  animation: bounceIn 0.6s ease;
+}
+
+.subtitle {
+  font-size: clamp(18px, 4vw, 26px);
+  color: #8D6E63;
+  text-align: center;
+  margin-top: -8px;
+}
+
+.mode-cards {
+  display: flex;
+  gap: clamp(12px, 3vw, 24px);
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.mode-card {
+  flex: 1;
+  min-width: 140px;
+  padding: clamp(20px, 5vw, 36px) clamp(12px, 3vw, 20px);
+  border-radius: 24px;
+  border: 4px solid transparent;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-card:active { transform: scale(0.94); }
+
+.mode-card.add {
+  background: var(--card-add);
+  border-color: #FFCC80;
+}
+.mode-card.add:hover { box-shadow: 0 8px 28px rgba(255,152,0,0.2); }
+
+.mode-card.sub {
+  background: var(--card-sub);
+  border-color: #90CAF9;
+}
+.mode-card.sub:hover { box-shadow: 0 8px 28px rgba(33,150,243,0.2); }
+
+.mode-card .emoji { font-size: clamp(48px, 10vw, 72px); }
+.mode-card .label {
+  font-size: clamp(28px, 6vw, 40px);
+  font-weight: 800;
+}
+.mode-card .hint {
+  font-size: clamp(16px, 3.5vw, 22px);
+  color: #6D4C41;
+  line-height: 1.4;
+}
+.mode-card .hint strong {
+  display: block;
+  font-size: clamp(18px, 4vw, 26px);
+  color: var(--text);
+}
+
+/* 卡片静态撒花装饰 */
+.mode-card .sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 24px;
+}
+.mode-card .sparkles span {
+  position: absolute;
+  animation: sparkleFloat 2.5s ease-in-out infinite;
+}
+
+@keyframes sparkleFloat {
+  0%, 100% { transform: scale(0.8) rotate(0deg); opacity: 0.5; }
+  50% { transform: scale(1.3) rotate(8deg); opacity: 1; }
+}
+
+/* ===== 难度选择页 ===== */
+.diff-buttons {
+  display: flex;
+  gap: clamp(12px, 3vw, 24px);
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.diff-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: clamp(24px, 5vw, 40px) clamp(16px, 3vw, 24px);
+  border-radius: 24px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: clamp(28px, 6vw, 40px);
+  font-weight: 800;
+  color: white;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.diff-btn:active { transform: scale(0.94); }
+.diff-btn.easy { background: linear-gradient(135deg, #66BB6A, #43A047); }
+.diff-btn.easy:hover { box-shadow: 0 8px 28px rgba(102,187,106,0.35); }
+.diff-btn.hard { background: linear-gradient(135deg, #FF7043, #E64A19); }
+.diff-btn.hard:hover { box-shadow: 0 8px 28px rgba(255,112,67,0.35); }
+.diff-btn .emoji { font-size: clamp(40px, 8vw, 60px); }
+.diff-btn .range { font-size: clamp(16px, 3.5vw, 22px); opacity: 0.9; }
+
+/* ===== 游戏页 ===== */
+.top-bar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  font-size: clamp(18px, 4vw, 24px);
+  font-weight: 700;
+  gap: 8px;
+}
+
+.top-bar .stars {
+  color: var(--gold);
+  font-size: clamp(22px, 5vw, 30px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.avatar {
+  width: clamp(32px, 6vw, 42px);
+  height: clamp(32px, 6vw, 42px);
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #FFB74D;
+}
+.top-bar .mode-tag {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: clamp(14px, 3vw, 20px);
+  color: white;
+}
+.top-bar .mode-tag.add { background: var(--btn-add); }
+.top-bar .mode-tag.sub { background: var(--btn-sub); }
+
+.btn-back {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 3px solid #DDD;
+  background: white;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.btn-back:active { transform: scale(0.88); }
+
+/* 题目区 */
+.question-area {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 16px);
+  font-size: clamp(40px, 10vw, 64px);
+  font-weight: 900;
+  min-height: 80px;
+}
+
+.question-area .op-sign {
+  font-size: clamp(40px, 10vw, 64px);
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.question-area .op-sign.add { color: var(--btn-add); }
+.question-area .op-sign.sub { color: var(--btn-sub); }
+
+.question-area .eq { color: #999; }
+.question-area .qm { color: var(--btn-add); animation: pulse 1s infinite; }
+
+/* 数字条 */
+.number-line-wrapper {
+  width: 100%;
+  padding: 40px 0 8px 0;
+  position: relative;
+}
+
+.number-line {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.cell {
+  flex: 1 1 0;
+  min-width: 0;
+  aspect-ratio: 0.75;
+  max-width: 52px;
+  border-radius: clamp(4px, 1vw, 10px);
+  background: var(--green-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(12px, 2.8vw, 26px);
+  font-weight: 700;
+  position: relative;
+  transition: background 0.3s, transform 0.3s;
+  border: 3px solid #C8E6C9;
+}
+
+.cell.highlight-start { background: var(--orange); transform: scale(1.12); border-color: #F57C00; z-index: 2; }
+.cell.highlight-pass { background: var(--pink-light); border-color: #EF9A9A; }
+.cell.highlight-end { background: var(--green); color: white; transform: scale(1.18); border-color: #388E3C; z-index: 3; animation: popCell 0.4s ease; }
+.cell.has-bunny { z-index: 5; }
+
+@keyframes popCell {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1.18); }
+}
+
+.bunny {
+  position: absolute;
+  font-size: clamp(32px, 7vw, 48px);
+  pointer-events: none;
+  z-index: 10;
+  transition: left 0.5s ease-in-out;
+  transform: translateX(-50%);
+}
+
+@keyframes bunnyBounce {
+  0% { margin-top: 0; }
+  50% { margin-top: -20px; }
+  100% { margin-top: 0; }
+}
+
+.bunny.arc-jump {
+  animation: arcJump 0.5s ease-in-out;
+}
+
+@keyframes arcJump {
+  0% { top: 0; }
+  50% { top: -48px; }
+  100% { top: 0; }
+}
+
+/* 答案按钮 */
+.answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 2.5vw, 16px);
+  width: 100%;
+}
+
+.ans-btn {
+  padding: clamp(18px, 4vw, 28px);
+  border-radius: 20px;
+  border: 4px solid #BBDEFB;
+  background: white;
+  font-family: inherit;
+  font-size: clamp(32px, 7vw, 48px);
+  font-weight: 800;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s, background 0.3s, border-color 0.3s, opacity 0.3s;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+.ans-btn:active { transform: scale(0.9); }
+.ans-btn:hover { border-color: var(--blue); }
+.ans-btn.correct { background: #C8E6C9; border-color: var(--green); animation: popCell 0.5s ease; }
+.ans-btn.wrong { opacity: 0.35; transform: scale(0.9); border-color: #DDD; }
+.ans-btn:disabled { pointer-events: none; }
+
+/* 反馈区 */
+.feedback {
+  font-size: clamp(22px, 5vw, 32px);
+  font-weight: 800;
+  text-align: center;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.feedback.correct { color: #2E7D32; }
+.feedback.wrong { color: #8D6E63; }
+
+/* 撒花容器 */
+.confetti-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.confetti {
+  position: absolute;
+  width: 14px; height: 14px;
+  border-radius: 4px;
+  animation: confettiFall 1.2s ease-out forwards;
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+}
+
+/* ===== 通用按钮 ===== */
+.btn-back-link {
+  background: none;
+  border: 3px solid #DDD;
+  border-radius: 16px;
+  padding: 10px 24px;
+  font-family: inherit;
+  font-size: clamp(18px, 4vw, 24px);
+  font-weight: 700;
+  color: #8D6E63;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.btn-back-link:active { transform: scale(0.92); }
+
+/* ===== 动画 ===== */
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+/* ===== 响应式：手机竖屏 ===== */
+@media (max-width: 420px) {
+  .mode-cards { flex-direction: column; }
+  .mode-card { flex-direction: row; gap: 12px; padding: 16px 20px; }
+  .mode-card .emoji { font-size: 40px; }
+  .mode-card .label { font-size: 26px; }
+  .answers { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ans-btn { padding: 14px; font-size: 28px; border-radius: 16px; }
+  .cell { font-size: 11px; border-radius: 4px; max-width: none; aspect-ratio: 0.65; }
+  .number-line { gap: 3px; padding: 0 2px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ===== 开始页 ===== -->
+  <div id="screen-start" class="screen active">
+    <div class="title">🐰 小兔子跳格子</div>
+  <div class="mode-cards">
+      <div class="mode-card add" onclick="selectMode('add')">
+        <div class="sparkles">
+          <span>✨</span><span>🌟</span><span>💫</span><span>⭐</span><span>💖</span><span>✨</span>
+        </div>
+        <span class="emoji">🐰</span>
+        <span class="label">+</span>
+        <span class="hint">往后跳</span>
+      </div>
+      <div class="mode-card sub" onclick="selectMode('sub')">
+        <div class="sparkles">
+          <span>✨</span><span>🌟</span><span>💫</span><span>⭐</span><span>💖</span><span>✨</span>
+        </div>
+        <span class="emoji">🐰</span>
+        <span class="label">−</span>
+        <span class="hint">往前跳</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 难度选择页 ===== -->
+  <div id="screen-difficulty" class="screen">
+    <div class="title" id="diff-title"></div>
+    <div class="subtitle">选一个难度吧～</div>
+    <div class="diff-buttons">
+      <button class="diff-btn easy" onclick="selectDifficulty('easy')">
+        <span class="emoji">🐣</span>
+        简单
+        <span class="range">数字 1 ~ 10</span>
+      </button>
+      <button class="diff-btn hard" onclick="selectDifficulty('hard')">
+        <span class="emoji">🐰</span>
+        挑战
+        <span class="range">数字 1 ~ 20</span>
+      </button>
+    </div>
+    <button class="btn-back-link" onclick="goToStart()">🔙 重新选择</button>
+  </div>
+
+  <!-- ===== 游戏页 ===== -->
+  <div id="screen-game" class="screen">
+    <!-- 状态栏 -->
+    <div class="top-bar">
+      <span class="stars" id="score-display"><img class="avatar" src="zhou.png" alt="🐰"> <span id="score-num">0</span> 分</span>
+      <span class="mode-tag" id="mode-tag"></span>
+      <button class="btn-back" onclick="goToStart()" title="返回">🏠</button>
+    </div>
+
+    <!-- 题目 -->
+    <div class="question-area" id="question-area"></div>
+
+    <!-- 数字条 -->
+    <div class="number-line-wrapper">
+      <div class="number-line" id="number-line"></div>
+    </div>
+
+    <!-- 答案按钮 -->
+    <div class="answers" id="answers"></div>
+
+    <!-- 反馈 -->
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+</div>
+
+<!-- 撒花容器 -->
+<div class="confetti-container" id="confetti-container"></div>
+
+<!-- ===== 音效引擎 ===== -->
+<script>
+// ============= 音效引擎 (Web Audio API) =============
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+function playPop() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, t);
+    osc.frequency.exponentialRampToValueAtTime(800, t + 0.06);
+    osc.frequency.exponentialRampToValueAtTime(400, t + 0.15);
+    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.2);
+  } catch(e) {}
+}
+
+function playCorrect() {
+  try {
+    const ctx = getAudioCtx();
+    const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      const t = ctx.currentTime + i * 0.12;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.25);
+    });
+  } catch(e) {}
+}
+
+function playTap() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, t);
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.08);
+  } catch(e) {}
+}
+
+// ============= 游戏状态 =============
+const state = {
+  score: 0,
+  mode: null,        // 'add' | 'sub'
+  difficulty: null,  // 'easy' | 'hard'
+  question: null,    // { a, b, op, answer }
+  maxNum: 10,
+  phase: 'start',    // 'start' | 'difficulty' | 'demo' | 'answering' | 'feedback'
+  answering: false,
+  bunnyPos: 0,
+};
+
+// ============= 工具函数 =============
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+// ============= 屏幕切换 =============
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + name);
+  if (el) el.classList.add('active');
+}
+
+function goToStart() {
+  state.mode = null;
+  state.difficulty = null;
+  state.score = 0;
+  state.phase = 'start';
+  state.answering = false;
+  updateScoreDisplay();
+  clearConfetti();
+  showScreen('start');
+}
+
+// ============= 模式选择 =============
+function selectMode(mode) {
+  playTap();
+  state.mode = mode;
+
+  const title = document.getElementById('diff-title');
+  if (mode === 'add') {
+    title.innerHTML = '+<br><span style="font-size:0.5em;color:#E65100">往后跳</span>';
+  } else {
+    title.innerHTML = '−<br><span style="font-size:0.5em;color:#1565C0">往前跳</span>';
+  }
+
+  showScreen('difficulty');
+}
+
+// ============= 难度选择 =============
+function selectDifficulty(diff) {
+  playTap();
+  state.difficulty = diff;
+  state.maxNum = diff === 'easy' ? 10 : 20;
+  state.score = 0;
+  updateScoreDisplay();
+  setupGameUI();
+  showScreen('game');
+  nextQuestion();
+}
+
+// ============= 游戏 UI 初始化 =============
+function setupGameUI() {
+  // 模式标签
+  const tag = document.getElementById('mode-tag');
+  tag.textContent = state.mode === 'add' ? '+' : '−';
+  tag.className = 'mode-tag ' + state.mode;
+
+  // 数字条 1~20（始终完整显示）
+  const nl = document.getElementById('number-line');
+  nl.innerHTML = '';
+  for (let i = 1; i <= 20; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.id = 'cell-' + i;
+    cell.textContent = i;
+    // 初始全部置灰，等动画时按路径点亮
+    cell.style.opacity = '0.3';
+    cell.style.background = '#eeeeee';
+    nl.appendChild(cell);
+  }
+}
+
+function updateScoreDisplay() {
+  const scoreNum = document.getElementById('score-num');
+  if (scoreNum) scoreNum.textContent = state.score;
+}
+
+// ============= 出题 =============
+function generateQuestion() {
+  const mode = state.mode;
+  const max = state.maxNum;
+  let a, b, answer;
+
+  if (mode === 'add') {
+    a = randomInt(1, max - 1);
+    b = randomInt(1, max - a);
+    answer = a + b;
+  } else {
+    a = randomInt(2, max);
+    b = randomInt(1, a - 1);
+    answer = a - b;
+  }
+
+  return { a, b, op: mode === 'add' ? '+' : '-', answer };
+}
+
+function generateOptions(correct) {
+  const max = state.maxNum;
+  const options = new Set([correct]);
+
+  // 优先取正确值附近的数字（±1, ±2, ±3, ±4）
+  for (let d = 1; d <= 4 && options.size < 4; d++) {
+    const up = correct + d;
+    const down = correct - d;
+    if (up <= max) options.add(up);
+    if (down >= 1 && options.size < 4) options.add(down);
+  }
+
+  // 还不够就随机填
+  while (options.size < 4) {
+    options.add(randomInt(1, max));
+  }
+
+  return shuffle([...options]);
+}
+
+// ============= 渲染题目 =============
+function renderQuestion(q, options) {
+  const area = document.getElementById('question-area');
+  const opClass = q.op === '+' ? 'add' : 'sub';
+  area.innerHTML = `
+    <span style="font-size:clamp(36px,8vw,56px);">🐰</span>
+    <span>${q.a}</span>
+    <span class="op-sign ${opClass}">${q.op}</span>
+    <span>${q.b}</span>
+    <span class="eq">=</span>
+    <span class="qm">?</span>
+  `;
+
+  // 渲染答案按钮（初始隐藏，演示完再显示）
+  const ansDiv = document.getElementById('answers');
+  ansDiv.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'ans-btn';
+    btn.textContent = opt;
+    btn.onclick = () => checkAnswer(opt, q.answer);
+    ansDiv.appendChild(btn);
+  });
+  ansDiv.style.opacity = '0';
+  ansDiv.style.pointerEvents = 'none';
+
+  // 清空反馈
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+}
+
+// ============= 跳跃动画 =============
+async function animateJump(start, steps, direction) {
+  // direction: +1 = 向右(加法), -1 = 向左(减法)
+  const endNum = start + direction * steps;
+  const pathStart = Math.min(start, endNum);
+  const pathEnd = Math.max(start, endNum);
+
+  // 所有格子先置灰，只高亮路径上的数字
+  for (let i = 1; i <= 20; i++) {
+    const c = document.getElementById('cell-' + i);
+    if (!c) continue;
+    c.className = 'cell';
+    if (i >= pathStart && i <= pathEnd) {
+      c.style.opacity = '';
+      c.style.background = '';
+    } else {
+      c.style.opacity = '0.3';
+      c.style.background = '#eeeeee';
+    }
+  }
+
+  // 移除旧兔子
+  document.querySelectorAll('.bunny-jumper').forEach(el => el.remove());
+
+  const wrapper = document.querySelector('.number-line-wrapper');
+
+  // 创建浮动兔子（放在 wrapper 中，绝对定位）
+  const bunny = document.createElement('span');
+  bunny.className = 'bunny bunny-jumper';
+  bunny.textContent = '🐰';
+  bunny.style.top = '4px';
+  wrapper.appendChild(bunny);
+
+  // 起点高亮
+  const startCell = document.getElementById('cell-' + start);
+  if (startCell) startCell.classList.add('highlight-start');
+
+  // 定位兔子到指定格子
+  function positionBunnyAt(cellNum) {
+    const cell = document.getElementById('cell-' + cellNum);
+    if (!cell) return;
+    const cellLeft = cell.offsetLeft + cell.offsetWidth / 2;
+    bunny.style.left = cellLeft + 'px';
+  }
+
+  // 初始定位（无过渡）
+  bunny.style.transition = 'none';
+  positionBunnyAt(start);
+  bunny.offsetHeight; // force reflow
+  bunny.style.transition = 'left 0.5s ease-in-out';
+  state.bunnyPos = start;
+
+  await sleep(700);
+
+  // 一步步跳
+  for (let i = 1; i <= steps; i++) {
+    const current = start + direction * i;
+
+    // 上一格标记
+    const prevCell = document.getElementById('cell-' + (current - direction));
+    if (prevCell && i > 1) prevCell.classList.add('highlight-pass');
+    if (prevCell && i === 1) prevCell.classList.add('highlight-start');
+
+    // 弧线跳！先强制重播动画
+    bunny.classList.remove('arc-jump');
+    bunny.offsetHeight; // force reflow
+    bunny.classList.add('arc-jump');
+
+    // 移动到目标格
+    positionBunnyAt(current);
+
+    // 高亮当前格
+    const curCell = document.getElementById('cell-' + current);
+    if (curCell && i < steps) {
+      curCell.classList.add('highlight-pass');
+    }
+
+    // 滚动跟随
+    if (curCell) curCell.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+
+    state.bunnyPos = current;
+    playPop();
+    await sleep(800);
+  }
+
+  // 终点高亮
+  const endCell = document.getElementById('cell-' + (start + direction * steps));
+  if (endCell) {
+    endCell.className = 'cell highlight-end';
+    endCell.style.opacity = '1';
+    endCell.style.background = '';
+  }
+
+  await sleep(600);
+}
+
+// ============= 下一题 =============
+async function nextQuestion() {
+  state.phase = 'demo';
+  state.answering = false;
+  state.question = generateQuestion();
+  const options = generateOptions(state.question.answer);
+
+  renderQuestion(state.question, options);
+
+  // 自动演示跳跃
+  const { a, b, op } = state.question;
+  const direction = op === '+' ? 1 : -1;
+  await animateJump(a, b, direction);
+
+  // 演示结束，显示答案按钮
+  state.phase = 'answering';
+  state.answering = true;
+  const ansDiv = document.getElementById('answers');
+  ansDiv.style.opacity = '1';
+  ansDiv.style.pointerEvents = 'auto';
+}
+
+// ============= 检查答案 =============
+async function checkAnswer(selected, correct) {
+  if (!state.answering) return;
+  state.answering = false;
+
+  const buttons = document.querySelectorAll('.ans-btn');
+  buttons.forEach(b => b.disabled = true);
+
+  const fb = document.getElementById('feedback');
+
+  if (selected === correct) {
+    // ✅ 答对
+    playCorrect();
+    state.score += 10;
+    updateScoreDisplay();
+
+    // 高亮正确按钮
+    buttons.forEach(b => {
+      if (parseInt(b.textContent) === correct) b.classList.add('correct');
+    });
+
+    fb.textContent = randomEncouragement();
+    fb.className = 'feedback correct';
+
+    // 兔子欢呼
+    const bunny = document.querySelector('.bunny-jumper');
+    if (bunny) {
+      bunny.textContent = '🎉';
+      bunny.style.animation = 'bunnyBounce 0.3s ease 3';
+    }
+
+    // 撒花
+    spawnConfetti();
+
+    // 自动下一题
+    await sleep(2000);
+    clearConfetti();
+    nextQuestion();
+
+  } else {
+    // ❌ 答错 — 温和提示
+    playTap();
+    buttons.forEach(b => {
+      if (parseInt(b.textContent) === selected) b.classList.add('wrong');
+    });
+
+    fb.textContent = randomGentleNudge();
+    fb.className = 'feedback wrong';
+
+    // 兔子歪头
+    const bunny = document.querySelector('.bunny-jumper');
+    if (bunny) bunny.textContent = '🤔';
+
+    // 恢复可继续选
+    await sleep(1200);
+    fb.textContent = '';
+    fb.className = 'feedback';
+    buttons.forEach(b => {
+      if (parseInt(b.textContent) === selected) {
+        b.classList.add('wrong');
+        b.disabled = true;
+      } else {
+        b.disabled = false;
+      }
+    });
+    state.answering = true;
+  }
+}
+
+// ============= 鼓励语 =============
+function randomEncouragement() {
+  const list = [
+    '太棒了！🎉', '真厉害！⭐', '答对了！👏', '你好聪明！🌟',
+    '完全正确！💪', '小天才！🎊', '非常棒！😊', '真了不起！🏆',
+    '对了对了！✨', '好厉害呀！💖',
+  ];
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function randomGentleNudge() {
+  const list = [
+    '差一点点～再试一次吧 💪',
+    '没关系，再看看 🤗',
+    '慢慢来，不着急哦 🐰',
+    '快对了！再想想 🌈',
+    '加油！你很棒～ ✨',
+  ];
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+// ============= 撒花效果 =============
+function spawnConfetti() {
+  const container = document.getElementById('confetti-container');
+  const colors = ['#FFD700','#FF6B6B','#4FC3F7','#81C784','#FFB74D','#BA68C8','#FF8A65','#4DD0E1'];
+
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = Math.random() * 100 + '%';
+    el.style.top = -(Math.random() * 40 + 10) + 'px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animationDelay = Math.random() * 0.5 + 's';
+    el.style.animationDuration = (Math.random() * 0.8 + 1) + 's';
+    el.style.width = (Math.random() * 12 + 8) + 'px';
+    el.style.height = (Math.random() * 12 + 8) + 'px';
+    el.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
+    container.appendChild(el);
+
+    // 动画结束后自动清理
+    setTimeout(() => el.remove(), 2000);
+  }
+}
+
+function clearConfetti() {
+  document.getElementById('confetti-container').innerHTML = '';
+}
+
+// ============= 初始化 =============
+// 随机摆放卡片内的装饰
+document.querySelectorAll('.mode-card .sparkles').forEach(container => {
+  container.querySelectorAll('span').forEach(span => {
+    const top = Math.random() * 85;      // 5% ~ 90%
+    const left = Math.random() * 85;     // 5% ~ 90%
+    const size = 14 + Math.random() * 14; // 14px ~ 28px
+    const delay = Math.random() * 2;
+    span.style.top = top + '%';
+    span.style.left = left + '%';
+    span.style.fontSize = size + 'px';
+    span.style.animationDelay = delay + 's';
+    span.style.animationDuration = (2 + Math.random() * 2) + 's';
+  });
+});
+
+// 首次用户交互时初始化 AudioContext
+document.addEventListener('click', () => {
+  getAudioCtx();
+}, { once: true });
+</script>
+
+</body>
+</html>
